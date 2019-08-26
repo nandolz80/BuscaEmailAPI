@@ -35,6 +35,10 @@ class BuscaEmail
 
         $mbox = imap_open($this->server, $this->userName, $this->password);
         $email = $this->montaJson($mbox);
+        //marca a mensagem como lida
+        imap_setflag_full($mbox, "2,5", "\\Seen", ST_UID);
+        //Fecha a conexão com o MailServer
+        imap_close($mbox);
         return  $email;
     }
 
@@ -58,13 +62,25 @@ class BuscaEmail
                 "nome" => $this->dataReplace($nome[0]),
                 "endereco" => $this->dataReplace($endereco[0]),
                 "valor" => $this->dataReplace($valor[0]),
-                "vencimento" => $this->dataReplace($vencimento[0])
+                "vencimento" => $this->dataReplace($vencimento[0]),
+                "arquivo" => $this->getAnexo($mbox)
             ];
 
             array_push($aux, $resp);
         }
 
         return  $aux;
+    }
+
+    private function getAnexo($mbox)
+    {
+        $dados  = [];
+        for($m = 1; $m <= imap_num_msg($mbox); $m++){
+            //pegando o anexo e descriptografando
+            $arquivo = imap_base64(imap_fetchbody($mbox, $m,2));
+            array_push($dados, $arquivo);
+        }
+        return $dados;
     }
 
     private function dataReplace($value)
